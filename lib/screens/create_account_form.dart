@@ -1,9 +1,10 @@
+import 'package:book_track_app/services/create_user.dart';
 import 'package:book_track_app/widgets/input_decoration.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'main_screen_page.dart';
-
 
 class CreateAccountForm extends StatelessWidget {
   const CreateAccountForm({
@@ -26,7 +27,8 @@ class CreateAccountForm extends StatelessWidget {
       key: _formKey,
       child: Column(
         children: [
-          Text('Please enter a valid email and password that is at least 6 characters'),
+          Text(
+              'Please enter a valid email and password that is at least 6 characters'),
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: TextFormField(
@@ -62,12 +64,27 @@ class CreateAccountForm extends StatelessWidget {
                 backgroundColor: Colors.amber,
                 textStyle: TextStyle(fontSize: 18)),
             onPressed: () {
-              if(_formKey.currentState!.validate()){
-                FirebaseAuth.instance.createUserWithEmailAndPassword(email: _emailTextController.text, password: _passwordTextController.text).then((value) {
-                  FirebaseAuth.instance.signInWithEmailAndPassword(email: _emailTextController.text, password: _passwordTextController.text).then((value) {
-                    return Navigator.push(context, MaterialPageRoute(builder: (context)=> MainScreenPage()));
-                  });
-                
+              if (_formKey.currentState!.validate()) {
+                String email = _emailTextController.text;
+                FirebaseAuth.instance
+                    .createUserWithEmailAndPassword(
+                        email: email, password: _passwordTextController.text)
+                    .then((value) {
+                  if (value.user != null) {
+                    String displayName = email.toString().split('@')[0];
+                    createUser(displayName, context).then((value) {
+                      FirebaseAuth.instance
+                          .signInWithEmailAndPassword(
+                              email: _emailTextController.text,
+                              password: _passwordTextController.text)
+                          .then((value) {
+                        return Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => MainScreenPage()));
+                      });
+                    });
+                  }
                 });
               }
             },
@@ -77,4 +94,5 @@ class CreateAccountForm extends StatelessWidget {
       ),
     );
   }
+
 }
