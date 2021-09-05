@@ -1,11 +1,12 @@
+import 'package:book_track_app/constants/constants.dart';
 import 'package:book_track_app/model/book.dart';
 import 'package:book_track_app/model/user.dart';
+import 'package:book_track_app/widgets/book_search_page.dart';
 import 'package:book_track_app/widgets/create_profile.dart';
-import 'package:book_track_app/widgets/input_decoration.dart';
+import 'package:book_track_app/widgets/reading_list_card.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:hexcolor/hexcolor.dart';
 
 import 'login_page.dart';
 
@@ -22,6 +23,8 @@ class MainScreenPage extends StatelessWidget {
     // final TextEditingController _avatarTextController = TextEditingController();
     CollectionReference userCollection =
         FirebaseFirestore.instance.collection('users');
+    CollectionReference bookCollectionReference =
+        FirebaseFirestore.instance.collection('books');
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 77,
@@ -67,13 +70,14 @@ class MainScreenPage extends StatelessWidget {
                         showDialog(
                             context: context,
                             builder: (context) {
-                              return createProfileDialog(context, curUser); 
+                              return createProfileDialog(context, curUser);
                             });
                       },
                     ),
                   ),
-                  Text('${curUser.displayName}',
-                      style: TextStyle(color: Colors.black26)),
+                  Text(curUser.displayName.toUpperCase(),
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: Colors.black)),
                 ],
               );
             },
@@ -87,6 +91,132 @@ class MainScreenPage extends StatelessWidget {
               },
               icon: Icon(Icons.logout),
               label: Text(''))
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => BookSearchPage()));
+        },
+        child: Icon(Icons.add),
+        backgroundColor: Colors.redAccent,
+      ),
+      body: Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 12, left: 12),
+            width: double.infinity,
+            child: RichText(
+                text: TextSpan(
+                    style: Theme.of(context).textTheme.headline5,
+                    children: [
+                  TextSpan(text: "Your reading\n activity "),
+                  TextSpan(
+                      text: "right now ...",
+                      style: TextStyle(fontWeight: FontWeight.bold))
+                ])),
+          ),
+          SizedBox(
+            height: 10,
+          ),
+          StreamBuilder<QuerySnapshot>(
+            stream: bookCollectionReference.snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return CircularProgressIndicator();
+              }
+              var userBookFilteredReadListStream =
+                  snapshot.data!.docs.map((book) {
+                return Book.fromDocument(book);
+              }).where((book) {
+                return (book.userID == FirebaseAuth.instance.currentUser!.uid);
+              })
+              .toList();
+
+              return Expanded(
+                flex: 1,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: userBookFilteredReadListStream.length,
+                  itemBuilder: (context, index) {
+                    Book book = userBookFilteredReadListStream[index];
+                    return ReadingListCard(
+                      rating: 5.0,
+                      title: book.title,
+                      author: book.author,
+                      image: book.photoUrl,
+                      buttonText: 'Reading',
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+          Container(
+            width: double.infinity,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(18.0),
+                  child: RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'Reading List',
+                          style: TextStyle(
+                            color: kBlackColor ,
+                              fontSize: 24, fontWeight: FontWeight.bold),
+                        )
+                      ],
+                    ),
+                  ),
+                )
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 8,
+          ),
+          StreamBuilder<QuerySnapshot>(
+            stream: bookCollectionReference.snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return CircularProgressIndicator();
+              }
+              var readingListBook = snapshot.data!.docs.map((book) {
+                return Book.fromDocument(book);
+              }).where((book) {
+                return (book.userID == FirebaseAuth.instance.currentUser!.uid);
+              })
+              .toList();
+              return Expanded(
+                flex: 1,
+                child: (readingListBook.length > 0
+                    ? ListView.builder(
+                        itemCount: readingListBook.length,
+                        scrollDirection: Axis.horizontal,
+                        itemBuilder: (context, index) {
+                          Book book = readingListBook[index];
+                          return ReadingListCard(
+                            buttonText: 'Not Started',
+                            rating: 5.0,
+                            author: book.author,
+                            image: book.photoUrl,
+                            title: book.title,
+                          );
+                        },
+                      )
+                    : Center(
+                        child: Text(
+                          'No Books found.',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                      )),
+              );
+            },
+          )
         ],
       ),
     );

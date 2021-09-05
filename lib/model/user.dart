@@ -1,15 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MUser {
-  final String uid;
-  final String id;
+  final String? uid;
+  final String? id;
   final String? quote;
   final String? profession;
   final String? avatarUrl;
   final String displayName;
   MUser(
-      {required this.uid,
-      required this.id,
+      {this.uid,
+      this.id,
       this.quote,
       this.profession,
       this.avatarUrl,
@@ -28,9 +28,10 @@ class MUser {
   Map<String, dynamic> toMap() {
     return {
       'uid': uid,
-      'id': id,
       'display_name': displayName,
-      'avatar_url': avatarUrl
+      'avatar_url': avatarUrl,
+      'profession': profession,
+      'quote': quote
     };
   }
 }
